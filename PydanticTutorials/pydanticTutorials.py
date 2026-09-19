@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, AnyUrl, Field, field_validator
+from pydantic import BaseModel, EmailStr, AnyUrl, Field, field_validator, model_validator
 from typing import List, Dict, Optional, Annotated
 
 class Patient(BaseModel):
@@ -13,7 +13,7 @@ class Patient(BaseModel):
 
     @field_validator("email")
     @classmethod
-    def email_validator(cls,value,):
+    def emailValidator(cls,value,):
 
         validDomainNames=["ici.com","hbl.com"]
 
@@ -27,10 +27,16 @@ class Patient(BaseModel):
     def transformName(cls,value):
         return value.upper()
 
+    @model_validator(mode="after")
+    def validateEmergencyContact(cls,model):
+        if model.age>60 and "emergencyNo" not in model.contactDetails:
+            raise ValueError("Age is greator then 60 but emergency contact no is not provided")
+        return model;
+
 
 patientData = {
     "name": "Murtaza",
-    "age": 23,
+    "age": 65,
     "linkedinUrl": "https://www.linkedin.com/",
     "isMarried":False,
     "email": "murtaza@ici.com",
@@ -38,7 +44,8 @@ patientData = {
     "allergies": ["Avocado", "Venoms", "mold spores"],
     "contactDetails": {
         "cell no": "12345678",
-        "address": "Abbottabad"
+        "address": "Abbottabad",
+        "emergencyNo":"87654321"
     }
 }
 
