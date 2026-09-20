@@ -153,7 +153,6 @@ env.bak/
 venv.bak/
 myenv/
 patientsenv/
-SentimentAnalysisenv/
 SentimentAnalysisEnv/
 
 # Spyder project settings
@@ -220,4 +219,3 @@ __marimo__/
 
 first.py
 ApiTesting.js
-SentimentAnalysis/
