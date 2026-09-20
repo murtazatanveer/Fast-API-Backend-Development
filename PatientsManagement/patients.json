@@ -48,5 +48,45 @@
     "weight": 75,
     "bmi": 31.22,
     "verdict": "Obese"
+  },
+  "P008": {
+    "name": "john doe",
+    "city": "Islamabad",
+    "age": 28,
+    "gender": "male",
+    "height": 1.65,
+    "weight": 90.0,
+    "bmi": 33.06,
+    "verdict": "Obese"
+  },
+  "P006": {
+    "name": "Chris",
+    "city": "Lahore",
+    "age": 40,
+    "gender": "male",
+    "height": 2.0,
+    "weight": 90.0,
+    "bmi": 22.5,
+    "verdict": "Normal"
+  },
+  "P007": {
+    "name": "Olivia Kane",
+    "city": "Berlin",
+    "age": 27,
+    "gender": "female",
+    "height": 1.8,
+    "weight": 65.0,
+    "bmi": 20.06,
+    "verdict": "Normal"
+  },
+  "P010": {
+    "name": "harry",
+    "city": "London",
+    "age": 30,
+    "gender": "male",
+    "height": 1.7,
+    "weight": 80.0,
+    "bmi": 27.68,
+    "verdict": "Overweight"
   }
 }
