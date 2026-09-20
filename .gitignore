@@ -154,6 +154,7 @@ venv.bak/
 myenv/
 patientsenv/
 SentimentAnalysisenv/
+SentimentAnalysisEnv/
 
 # Spyder project settings
 .spyderproject
@@ -215,7 +216,8 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Tester Files
+# Tester Files and folders
 
 first.py
 ApiTesting.js
+SentimentAnalysis/
