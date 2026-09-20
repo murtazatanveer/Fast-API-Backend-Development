@@ -145,6 +145,11 @@ def deletePatient(patientId:str=Path(...,description="Id of Patient in the DB",e
     return JSONResponse(status_code=200,content={"message":"Patient Deleted Successfully","success":True,"data":delPatient})
 
 
+# @app.get("/exception-example")
+# def exceptionExample():
+#     a=10/0
+#     return {"message":"Request Success","A value":a}
+
 
 
 

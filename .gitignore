@@ -153,6 +153,7 @@ env.bak/
 venv.bak/
 myenv/
 patientsenv/
+SentimentAnalysisenv/
 
 # Spyder project settings
 .spyderproject
