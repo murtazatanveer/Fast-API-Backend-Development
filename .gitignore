@@ -154,6 +154,7 @@ venv.bak/
 myenv/
 patientsenv/
 SentimentAnalysisEnv/
+RoutingEnv/
 
 # Spyder project settings
 .spyderproject
