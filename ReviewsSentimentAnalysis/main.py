@@ -1,10 +1,7 @@
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
-from typing import Annotated
-import pickle
-
-# Import the module so pickle can find preprocessing.preprocess_text
-from preprocessing import preprocess_text  # noqa: F401
+from fastapi import FastAPI 
+from Model.loadModel import vec,model
+from preprocessing import preprocess_text # Function used by vectorizor during text preprocessing
+from Schema.reviewSchema import Review , PredictionResponce
 
 app = FastAPI(
     title="Sentiment Analysis API",
@@ -12,27 +9,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
-
-def load_model():
-    with open("sentiment_analysis_model.pkl", "rb") as file:
-        return pickle.load(file)
-
-
-model_data = load_model()
-vec = model_data["vectorizer"]
-model = model_data["classifier"]
-
-
 @app.get("/")
 def hello():
     return {"message": "Welcome to Sentiment Analysis Project"}
 
-
-class Review(BaseModel):
-    review: Annotated[str,Field(..., min_length=5, max_length=800,description="Customer review text",)]
-
-
-@app.post("/prediction")
+@app.post("/prediction",response_model=PredictionResponce)
 def review_prediction(review: Review):
     X = vec.transform([review.review])
     pred = model.predict(X)
@@ -43,7 +24,12 @@ def review_prediction(review: Review):
         "success": True,
         "prediction": {
             "result": int(pred[0]),
-            "positivity_percent": round(float(prob[0][1]), 2),
-            "negativity_percent": round(float(prob[0][0]), 2),
+            "positivity_percent": int(prob[0][1]),
+            "negativity_percent": int(prob[0][0])
         },
     }
+
+
+
+
+    
