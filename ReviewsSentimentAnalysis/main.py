@@ -1,5 +1,5 @@
 from fastapi import FastAPI 
-from Model.loadModel import vec,model
+from Model.modelPrediction import prediction
 from preprocessing import preprocess_text # Function used by vectorizor during text preprocessing
 from Schema.reviewSchema import Review , PredictionResponce
 
@@ -15,9 +15,8 @@ def hello():
 
 @app.post("/prediction",response_model=PredictionResponce)
 def review_prediction(review: Review):
-    X = vec.transform([review.review])
-    pred = model.predict(X)
-    prob = model.predict_proba(X) * 100
+    
+    pred,prob = prediction(review=review.review)
 
     return {
         "message": "Model Prediction done Successfully",
