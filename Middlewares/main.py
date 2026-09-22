@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Request,HTTPException
+from fastapi import FastAPI,Request,Header,Depends,Path,HTTPException
 from fastapi.responses import JSONResponse
 
 app = FastAPI()
@@ -35,3 +35,32 @@ def error():
     return JSONResponse(status_code=500,content="internal server error")
     
     
+@app.get("/token")
+def printToken(token: str = Header(description="Enter Token",default="secret_token")):
+    return {"token_received": token}
+
+# Dependency Injection 
+
+def getGreeting(greetMsg:str=Path(...,description="Give Greeting message",title="Greeting Message",example="Good Afternoon"))->str:
+    return greetMsg
+
+@app.get("/greeting/{greetMsg}")
+def greeting(msg:str=Depends(getGreeting)):
+    return JSONResponse(status_code=200,content={"message":msg,"sucess":True})
+
+# No Code Repetition Using Dependency 
+
+TOKEN = "MyPrivateToken"
+
+def verifyToken(token: str=Header(...,description="Provide Token")):
+    if token != TOKEN:
+        raise HTTPException(status_code=401,detail="Invalid Token",)
+    return token
+
+@app.get("/products")
+def getProducts(tok:str = Depends(verifyToken)):
+    return {"message": "Products list","success":True}
+    
+@app.get("/orders")
+def list_orders(token: str = Depends(verifyToken)):
+    return {"message": "Orders list"}
