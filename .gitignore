@@ -155,6 +155,7 @@ myenv/
 patientsenv/
 SentimentAnalysisEnv/
 RoutingEnv/
+MiddlewaresEnv/
 
 # Spyder project settings
 .spyderproject
