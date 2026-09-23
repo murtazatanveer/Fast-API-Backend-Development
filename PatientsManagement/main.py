@@ -107,7 +107,6 @@ class UpdatePatient(BaseModel):
     height:Annotated[Optional[float],Field(default=None,gt=0,description="Patient height in meters",strict=True)]
     weight:Annotated[Optional[float],Field(default=None,gt=0,description="Patient height in kg's",strict=True)]
 
-
 @app.put("/update-patient/{patientId}")
 def updatePatient(patient:UpdatePatient,patientId:str=Path(...,description="Id of Patient in the DB",examples=["P001"])):
     print(patientId)

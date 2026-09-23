@@ -156,6 +156,7 @@ patientsenv/
 SentimentAnalysisEnv/
 RoutingEnv/
 MiddlewaresEnv/
+CRUDApp/
 
 # Spyder project settings
 .spyderproject
@@ -222,3 +223,6 @@ __marimo__/
 first.py
 ApiTesting.js
 abc.js
+
+# Firebase Files
+service-account.json
