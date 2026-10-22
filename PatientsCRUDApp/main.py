@@ -6,16 +6,17 @@ from pydantic import BaseModel,computed_field,Field
 from typing import Annotated,Literal,Optional
 from google.cloud import firestore
 
-from config import settings                       # MUST be first
-from firestore_client import get_db, close_db
+from Configuration.config import settings                       
+from Configuration.firestore_client import get_db, close_db
+
+from routes import authRoutes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Warm up the client at startup
     db = get_db()
     print(f"✅ Firestore client ready → {settings.gcp_project_id}")
     yield
-    await close_db()
+    close_db()
     print("🔌 Firestore client closed")
 
 
@@ -28,6 +29,8 @@ app = FastAPI(
 @app.get("/")
 def welcomeMessage():
     return {"message":"Welcome to Patients CRUD App Using Firestore","success":True}
+
+app.include_router(authRoutes.router)
 
 class Patient(BaseModel):
     id : Annotated[str,Field(...,pattern=r"^P\d{3}$",description='ID of the patient', examples=['P001'])]

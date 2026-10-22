@@ -226,3 +226,6 @@ abc.js
 
 # Firebase Files
 service-account.json
+
+# Folders
+JWTAuthentication

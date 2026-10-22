@@ -1,12 +1,11 @@
 # firestore_client.py
 from google.cloud import firestore
-from config import settings
+from Configuration.config import settings
 
 _db: firestore.AsyncClient | None = None
 
 
 def get_db() -> firestore.AsyncClient:
-    """Return a singleton async Firestore client."""
     global _db
     if _db is None:
         _db = firestore.AsyncClient(
@@ -16,9 +15,8 @@ def get_db() -> firestore.AsyncClient:
     return _db
 
 
-async def close_db() -> None:
-    """Close the Firestore client on app shutdown."""
+def close_db() -> None:
     global _db
     if _db is not None:
-        _db.close()          # ← NOT awaited
+        _db.close()          
         _db = None
