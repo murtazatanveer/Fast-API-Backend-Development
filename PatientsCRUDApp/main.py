@@ -1,6 +1,6 @@
 # main.py
 from contextlib import asynccontextmanager
-from fastapi import FastAPI,HTTPException,Query,Path
+from fastapi import FastAPI,HTTPException,Query,Path,Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,computed_field,Field
 from typing import Annotated,Literal,Optional
@@ -8,6 +8,10 @@ from google.cloud import firestore
 
 from Configuration.config import settings                       
 from Configuration.firestore_client import get_db, close_db
+
+from Dependencies.authDependency import getCurrentUser
+
+from Utils.responseHelper import errorResponse,successResponse
 
 from routes import authRoutes
 
@@ -57,43 +61,58 @@ class Patient(BaseModel):
             return "Overweight"
         else:
             return "Obese"
-
+        
 @app.post("/create-patient")
-async def createPatient(patient: Patient):
-
+async def createPatient(patient: Patient, currentUser: dict = Depends(getCurrentUser)):
     try:
         db = get_db()
-
         doc_ref = db.collection("Patients").document(patient.id)
-
         snap = await doc_ref.get()
 
+        # 1. Check if Patient ID already exists
         if snap.exists:
-            return JSONResponse(
-                status_code=409,
-                content={"message": "Patient ID already exists", "success": False}
+            return errorResponse(
+                statusCode=409,
+                message="Patient ID already exists",
+                displayUi=True
             )
 
-        await doc_ref.set(patient.model_dump(exclude=["id"]))
+        # 2. Prepare the data
+        patientData = patient.model_dump(exclude=["id"])
+        patientData["createdBy"] = currentUser["id"]
 
-        return JSONResponse(
-            status_code=201,
-            content={
-                "message": "Patient Created Successfully",
-                "success": True,
+        # 3. Save to Firestore
+        await doc_ref.set(patientData)
+
+        # 4. Return Success
+        return successResponse(
+            statusCode=201,
+            message="Patient Created Successfully",
+            data={
                 "docId": doc_ref.id,
                 "docPath": doc_ref.path,
-            }
+                "createdBy": currentUser["id"]
+            },
+            displayUi=True
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return errorResponse(
+            statusCode=500,
+            message="An unexpected error occurred while creating the patient.",
+            displayUi=False
+        )
     
 @app.get("/patients")
-async def getPatients():
+async def getPatients(currentUser: dict = Depends(getCurrentUser)):
     try:
         db = get_db()
-        docs = db.collection("Patients").stream()
+
+        # 1. Query only the patients created by the logged-in user
+        query = db.collection("Patients").where(
+            filter=firestore.FieldFilter("createdBy", "==", currentUser["id"])
+        )
+        docs = query.stream()
 
         patients = []
         async for doc in docs:
@@ -101,29 +120,56 @@ async def getPatients():
             data["id"] = doc.id            
             patients.append(data)
 
-        return JSONResponse(status_code=200,content={"message":"All Patients Data","success":True,"data":patients})
+        # 2. Return success response
+        return successResponse(
+            statusCode=200,
+            message="Patients fetched successfully",
+            data=patients,
+            displayUi=False
+        )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # 3. Return error response
+        return errorResponse(
+            statusCode=500,
+            message="An error occurred while fetching patients",
+            displayUi=False
+        )
 
 @app.get("/sort-patients")
-async def sortPatients(sortBy:str = Query(...,description="Sort on the basis of height , weight or bmi"), order:str=Query("asc",description="Sort in asc or desc order")):
-    
+async def sortPatients(
+    sortBy: str = Query(..., description="Sort on the basis of height, weight or bmi"), 
+    order: str = Query("asc", description="Sort in asc or desc order"),
+    currentUser: dict = Depends(getCurrentUser)
+):
     try:
-        sortByFields = ["height","weight","bmi"]
-        orderFields = ["asc","desc"]
+        sortByFields = ["height", "weight", "bmi"]
+        orderFields = ["asc", "desc"]
 
+        # 1. Validate Query Parameters
         if sortBy not in sortByFields:
-            return JSONResponse(status_code=400,content={"message":f'Invalid sortby field select from {sortByFields}',"success":False})
+            return errorResponse(
+                statusCode=400,
+                message=f"Invalid sortBy field. Select from {sortByFields}",
+                displayUi=True
+            )
         
         if order not in orderFields:
-            return JSONResponse(status_code=400,content={"message":f'Invalid order field select from {orderFields}',"success":False})
+            return errorResponse(
+                statusCode=400,
+                message=f"Invalid order field. Select from {orderFields}",
+                displayUi=True
+            )
 
         db = get_db()
-
         direction = firestore.Query.ASCENDING if order == "asc" else firestore.Query.DESCENDING
 
-        query = db.collection("Patients").order_by(sortBy, direction=direction)
+        # 2. Combine the Filter (by user) and the Sort (by query)
+        query = (
+            db.collection("Patients")
+            .where(filter=firestore.FieldFilter("createdBy", "==", currentUser["id"]))
+            .order_by(sortBy, direction=direction)
+        )
 
         patients = []
         async for doc in query.stream():
@@ -131,28 +177,59 @@ async def sortPatients(sortBy:str = Query(...,description="Sort on the basis of 
             data["id"] = doc.id
             patients.append(data)
         
-        return JSONResponse(status_code=200,content={"message":f'Sorted Patients Fetched on the basis of {sortBy} and order is {order}',"success":False,"data":patients})
+        # 3. Return Success
+        return successResponse(
+            statusCode=200,
+            message=f"Patients sorted by {sortBy} in {order} order",
+            data=patients,
+            displayUi=False
+        )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # 3. Return Error
+        return errorResponse(
+            statusCode=500,
+            message="An error occurred while sorting patients",
+            displayUi=False
+        )
+
 
 @app.get("/patient/{patientId}")
-async def getPatientWithId(patientId:Annotated[str, Path(..., pattern=r"^P\d{3}$", description="ID of Patient in the DB", examples=["P001"])]):
-
+async def getPatientWithId(
+    patientId: Annotated[str, Path(..., pattern=r"^P\d{3}$", description="ID of Patient in the DB", examples=["P001"])],
+    currentUser: dict = Depends(getCurrentUser) # <-- 1. Auth Dependency
+):
     try:
-        db=get_db()
+        db = get_db()
         doc_ref = db.collection("Patients").document(patientId)
         snap = await doc_ref.get()
 
+        # 2. Error Response if not found
         if not snap.exists:
-            return JSONResponse(
-                status_code=404,
-                content={"message": "Patient ID doesnot exists", "success": False}
+            return errorResponse(
+                statusCode=404,
+                message="Patient ID does not exist",
+                displayUi=True
             )
         
-        return JSONResponse(status_code=200,content={"message":"Patient Found", "success": True , "data":snap.to_dict(),"docId":snap.id})
+        # 3. Success Response
+        patientData = snap.to_dict()
+        patientData["id"] = snap.id
+
+        return successResponse(
+            statusCode=200,
+            message="Patient Found",
+            data=patientData,
+            displayUi=True
+        )
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # 4. Error Response for server failure
+        return errorResponse(
+            statusCode=500,
+            message="An error occurred while fetching the patient",
+            displayUi=False
+        )
     
 class UpdatePatient(BaseModel):
     name : Annotated[Optional[str],Field(default=None,max_length=50,description='Name of the patient')]
@@ -169,6 +246,7 @@ async def updatePatient(
         Path(..., pattern=r"^P\d{3}$", description="ID of Patient in the DB", examples=["P001"]),
     ],
     patient: UpdatePatient,
+    currentUser: dict = Depends(getCurrentUser) # <-- Auth Dependency
 ):
     try:
         db = get_db()
@@ -176,18 +254,20 @@ async def updatePatient(
         snap = await doc_ref.get()
 
         if not snap.exists:
-            return JSONResponse(
-                status_code=404,
-                content={"message": "Patient ID does not exist", "success": False},
+            return errorResponse(
+                statusCode=404,
+                message="Patient ID does not exist",
+                displayUi=True
             )
 
         # 1. Only fields the client sent (drop None)
         updatedPatient = patient.model_dump(exclude_none=True)
 
         if not updatedPatient:
-            return JSONResponse(
-                status_code=400,
-                content={"message": "No fields to update", "success": False},
+            return errorResponse(
+                statusCode=400,
+                message="No fields to update",
+                displayUi=True
             )
 
         # 2. Merge with existing doc
@@ -195,45 +275,65 @@ async def updatePatient(
         tempPatient = {**currentPatient, **updatedPatient}
         tempPatient["id"] = patientId
 
-        # 3. Recompute bmi and verdict  (⚠️ FIX: exclude={"id"} with braces)
+        # 3. Recompute bmi and verdict
         newPatient = Patient(**tempPatient).model_dump(exclude={"id"})
 
-        # 4. Write: client changes + recomputed fields + timestamp
+        # 4. Write: client changes + recomputed fields
         write_payload = {
             **updatedPatient,
             "bmi": newPatient["bmi"],
             "verdict": newPatient["verdict"],
-       
         }
 
         await doc_ref.update(write_payload)
 
-        return JSONResponse(
-            status_code=200,
-            content={
-                "message": "Patient updated successfully",
-                "success": True,
+        return successResponse(
+            statusCode=200,
+            message="Patient updated successfully",
+            data={
                 "docId": doc_ref.id,
-                "updated_fields": list(updatedPatient.keys()),
+                "updatedFields": list(updatedPatient.keys())
             },
+            displayUi=True
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return errorResponse(
+            statusCode=500,
+            message="An error occurred while updating the patient",
+            displayUi=False
+        )
+    
 
 @app.delete("/delete-patient/{patientId}")
-async def deletePatient(patientId:Annotated[str, Path(..., pattern=r"^P\d{3}$", description="ID of Patient in the DB", examples=["P001"])]):
+async def deletePatient(
+    patientId: Annotated[str, Path(..., pattern=r"^P\d{3}$", description="ID of Patient in the DB", examples=["P001"])],
+    currentUser: dict = Depends(getCurrentUser) # <-- Auth Dependency
+):
     try:
-        db=get_db()
+        db = get_db()
         doc_ref = db.collection("Patients").document(patientId)
         snap = await doc_ref.get()
 
         if not snap.exists:
-            return JSONResponse(
-                status_code=404,
-                content={"message": "Patient ID doesnot exists", "success": False}
+            return errorResponse(
+                statusCode=404,
+                message="Patient ID does not exist",
+                displayUi=True
             )
+            
         await doc_ref.delete()
-        return JSONResponse(status_code=200,content={"message":"Patient Deleted Successfully", "success": True , "docId":doc_ref.id})
+        
+        return successResponse(
+            statusCode=200,
+            message="Patient Deleted Successfully",
+            data={"docId": doc_ref.id},
+            displayUi=True
+        )
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return errorResponse(
+            statusCode=500,
+            message="An error occurred while deleting the patient",
+            displayUi=False
+        )
