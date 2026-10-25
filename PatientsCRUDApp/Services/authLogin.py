@@ -46,7 +46,7 @@ async def loginUser(userData: UserLogin, response: Response):
         value=refreshToken,
         httponly=True,
         secure=False, # Set to True in production
-        samesite="strict", 
+         samesite="lax", 
         max_age=settings.refresh_token_expire_days * 24 * 60 * 60
     )
 

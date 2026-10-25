@@ -19,7 +19,7 @@ async def logoutUser(request: Request, response: Response):
             key="refreshToken",
             httponly=True,
             secure=False, 
-            samesite="strict"
+            samesite="lax"
         )
         return {"error": "Invalid or already revoked token", "statusCode": 401}
 

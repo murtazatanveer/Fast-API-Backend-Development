@@ -17,12 +17,13 @@ async def registerUser(userData: UserRegister, response: Response):
     # 1. Check if Email already exists
     emailQuery = await usersRef.where(filter=firestore.FieldFilter("email", "==", userData.email)).limit(1).get()
     if emailQuery:
-        return {"error": "Email already registered", "statusCode": 409}
+        
+        return {"error": "Username or Email already exists", "statusCode": 409}
 
     # 2. Check if Username already exists
     usernameQuery = await usersRef.where(filter=firestore.FieldFilter("username", "==", userData.username)).limit(1).get()
     if usernameQuery:
-        return {"error": "Username already taken", "statusCode": 409}
+        return {"error": "Username or Email already exists", "statusCode": 409}
 
     # 3. Hash Password & Create User in Firestore
     hashedPw = hashPassword(userData.password)
@@ -53,8 +54,8 @@ async def registerUser(userData: UserRegister, response: Response):
         key="refreshToken",
         value=refreshToken,
         httponly=True, 
-        secure=False, # During deployment set this t True
-        samesite="strict",
+        secure=False, # During deployment set this to True
+        samesite="lax",
         max_age=settings.refresh_token_expire_days * 24 * 60 * 60
     )
     # 7. Return success data

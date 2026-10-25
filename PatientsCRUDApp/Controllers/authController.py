@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Response , Depends , Request
+from fastapi import APIRouter, Response , Depends , Request , status
 
 from Models.authModels import UserRegister,UserLogin
 
@@ -14,12 +14,11 @@ from Dependencies.authDependency import getCurrentUser
 
 router = APIRouter()
 
-@router.post("/signup")
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def signup(
     userData: UserRegister, 
     response: Response
 ):
-    
     try:
         result = await registerUser(userData, response)
 
@@ -30,20 +29,24 @@ async def signup(
                 displayUi=True
             )
 
-        return successResponse(
-            statusCode=201,
-            message="Account created successfully",
-            data={
+        return {
+            "success": True,
+            "message": "Account created successfully",
+            "displayUi": True,
+            "data": {
                 "accessToken": result["accessToken"],
                 "user": result["user"]
-            },
-            displayUi=True
-        )
+            }
+        }
     except Exception as e:
-        errorResponse(statusCode=500,message=f'Internal Server Error , {str(e)}')
+        return errorResponse(
+            statusCode=500,
+            message=f"Internal Server Error: {str(e)}",
+            displayUi=False
+        )
 
 
-@router.post("/login")
+@router.post("/login", status_code=status.HTTP_200_OK)
 async def login(userData: UserLogin, response: Response):
     try:
         result = await loginUser(userData, response)
@@ -55,18 +58,21 @@ async def login(userData: UserLogin, response: Response):
                 displayUi=True
             )
 
-        return successResponse(
-            statusCode=200,
-            message="Logged in successfully",
-            data={
+        return {
+            "success": True,
+            "message": "Logged in successfully",
+            "displayUi": True,
+            "data": {
                 "accessToken": result["accessToken"],
                 "user": result["user"]
-            },
-            displayUi=True
-        )
+            }
+        }
     except Exception as e:
-        errorResponse(statusCode=500,message=f'Internal Server Error , {str(e)}')
-
+        return errorResponse(
+            statusCode=500,
+            message=f"Internal Server Error: {str(e)}",
+            displayUi=False
+        )
 
 @router.post("/refresh")
 async def refresh(request: Request):
@@ -74,11 +80,9 @@ async def refresh(request: Request):
         result = await refreshUserToken(request)
 
         if "error" in result:
-            # displayUi=False because React interceptors handle this silently
             return errorResponse(
                 statusCode=result["statusCode"], 
                 message=result["error"], 
-                displayUi=False 
             )
 
         return successResponse(
@@ -88,7 +92,6 @@ async def refresh(request: Request):
                 "accessToken": result["accessToken"],
                 "user": result["user"]
             },
-            displayUi=False
         )
     except Exception as e:
         errorResponse(statusCode=500,message=f'Internal Server Error , {str(e)}')
@@ -116,17 +119,6 @@ async def logout(
     except Exception as e:
         errorResponse(statusCode=500,message=f'Internal Server Error , {str(e)}')
     
-
-@router.get("/protected")
-async def getProtectedUser(currentUser: dict = Depends(getCurrentUser)):
-   
-    return successResponse(
-        statusCode=200,
-        message="Access granted to protected route",
-        data={"user": currentUser},
-        displayUi=False
-    )
-
 
 @router.post("/logout-other-devices")
 async def logoutoOtherDevices(

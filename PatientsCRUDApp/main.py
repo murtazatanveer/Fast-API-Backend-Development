@@ -1,7 +1,7 @@
 # main.py
 from contextlib import asynccontextmanager
-from fastapi import FastAPI,HTTPException,Query,Path,Depends
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI,Query,Path,Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel,computed_field,Field
 from typing import Annotated,Literal,Optional
 from google.cloud import firestore
@@ -28,6 +28,16 @@ app = FastAPI(
     title="Patients CRUD API",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"], 
+    allow_credentials=True, 
+    allow_methods=["*"],
+    allow_headers=["*"],
+     expose_headers=["Set-Cookie"], 
 )
 
 @app.get("/")
@@ -99,8 +109,8 @@ async def createPatient(patient: Patient, currentUser: dict = Depends(getCurrent
     except Exception as e:
         return errorResponse(
             statusCode=500,
-            message="An unexpected error occurred while creating the patient.",
-            displayUi=False
+            message="Internal Server Error",
+            displayUi=True
         )
     
 @app.get("/patients")

@@ -11,6 +11,7 @@ async def getCurrentUser(
 ) -> dict:
     
     try:
+        
         # 1. Manually check the Bearer_ prefix
         if not authToken.startswith("Bearer_"):
             raise HTTPException(
