@@ -11,9 +11,9 @@ export const authRequest = async (endpoint, formData, errorMessage) => {
   const data = await response.json();
 
   if (!response.ok) {
-    const error = new Error(data.message || errorMessage);
+    const error = new Error(data?.message || errorMessage);
 
-    error.displayUi = data.displayUi ?? false;
+    error.displayUi = data?.displayUi ?? false;
 
     throw error;
   }

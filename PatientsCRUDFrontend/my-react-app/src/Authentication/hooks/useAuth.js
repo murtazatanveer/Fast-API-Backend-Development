@@ -42,8 +42,10 @@ export const useAuth = (type = "login") => {
       navigate("/dashboard");
     } catch (err) {
       // 5. Handle the displayUi flag
-      if (err.displayUi) {
+      if (err?.displayUi === true) {
         setError(err.message);
+      } else {
+        setError("Network error or Server Error. Please try again.");
       }
     } finally {
       setLoading(false);

@@ -9,7 +9,6 @@ async def refreshUserToken(request: Request):
 
     # 1. Read the token from the httpOnly cookie
     refreshToken = request.cookies.get("refreshToken")
-    print("Refresh Token : ",refreshToken)
     if not refreshToken:
         return {"error": "No refresh token provided", "statusCode": 401}
 

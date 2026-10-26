@@ -74,7 +74,7 @@ async def login(userData: UserLogin, response: Response):
             displayUi=False
         )
 
-@router.post("/refresh")
+@router.put("/refresh")
 async def refresh(request: Request):
     try:
         result = await refreshUserToken(request)
@@ -97,14 +97,14 @@ async def refresh(request: Request):
         errorResponse(statusCode=500,message=f'Internal Server Error , {str(e)}')
 
 
-@router.post("/logout")
+@router.delete("/logout")
 async def logout(
     request: Request, 
     response: Response,
     currentUser: dict = Depends(getCurrentUser)
 ):
     try:
-        result = await logoutUser(request, response)
+        result = await logoutUser(request, response,currentUser["id"])
 
         if "error" in result:
             return errorResponse(
@@ -120,7 +120,7 @@ async def logout(
         errorResponse(statusCode=500,message=f'Internal Server Error , {str(e)}')
     
 
-@router.post("/logout-other-devices")
+@router.delete("/logout-other-devices")
 async def logoutoOtherDevices(
     request: Request, 
     currentUser: dict = Depends(getCurrentUser)
@@ -137,6 +137,7 @@ async def logoutoOtherDevices(
         return successResponse(
             statusCode=200,
             message=result["message"],
+            displayUi=True
         )
     except Exception as e:
         errorResponse(statusCode=500,message=f'Internal Server Error , {str(e)}')

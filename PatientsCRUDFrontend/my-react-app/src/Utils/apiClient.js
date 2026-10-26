@@ -2,7 +2,7 @@ import API_URL from "../Configuration/API_URL";
 
 const refreshAccessToken = async () => {
   const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
-    method: "POST",
+    method: "PUT",
     credentials: "include",
   });
 
@@ -35,8 +35,6 @@ export const fetchApi = async (
   let response = await fetch(`${API_URL}${endpoint}`, requestConfig);
 
   if (response.status === 401) {
-    console.log("Token expired, attempting to refresh...");
-
     try {
       const newToken = await refreshAccessToken();
       requestConfig.headers.authToken = `Bearer_${newToken}`;
