@@ -1,0 +1,14 @@
+# Core Framework & Server
+fastapi
+uvicorn
+pydantic[email]
+
+# Database & ORM
+sqlalchemy>=2.0.0
+asyncpg
+greenlet
+
+# Configuration
+pydantic-settings
+python-dotenv
+uuid6

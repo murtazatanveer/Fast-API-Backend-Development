@@ -157,6 +157,7 @@ SentimentAnalysisEnv/
 RoutingEnv/
 MiddlewaresEnv/
 CRUDApp/
+sqlenv/
 
 # Spyder project settings
 .spyderproject
