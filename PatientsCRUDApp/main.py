@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel,computed_field,Field
 from typing import Annotated,Literal,Optional
 from google.cloud import firestore
-
 from Configuration.config import settings                       
 from Configuration.firestore_client import get_db, close_db
 
@@ -256,7 +255,7 @@ async def updatePatient(
         Path(..., pattern=r"^P\d{3}$", description="ID of Patient in the DB", examples=["P001"]),
     ],
     patient: UpdatePatient,
-    currentUser: dict = Depends(getCurrentUser) # <-- Auth Dependency
+    currentUser: dict = Depends(getCurrentUser) 
 ):
     try:
         db = get_db()
@@ -318,7 +317,7 @@ async def updatePatient(
 @app.delete("/delete-patient/{patientId}")
 async def deletePatient(
     patientId: Annotated[str, Path(..., pattern=r"^P\d{3}$", description="ID of Patient in the DB", examples=["P001"])],
-    currentUser: dict = Depends(getCurrentUser) # <-- Auth Dependency
+    currentUser: dict = Depends(getCurrentUser) 
 ):
     try:
         db = get_db()
