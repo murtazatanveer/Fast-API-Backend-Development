@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
@@ -40,15 +39,8 @@ class LoginRequest(CamelModel):
     password: str = Field(min_length=1, max_length=72)
 
 
-class UserPublic(CamelModel):
-    id: UUID
-    username: str
-    email: EmailStr
-    is_active: bool
-    created_at: datetime
-
-
-class TokenData(CamelModel):
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int
+class AccessTokenPayload(CamelModel):
+    user_id: UUID
+    jti: str
+    exp: int
+    iat: int | None = None

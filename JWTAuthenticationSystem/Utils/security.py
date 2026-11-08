@@ -40,6 +40,16 @@ def createAccessToken(user_id: UUID) -> tuple[str, int]:
     return access_token, int(lifetime.total_seconds())
 
 
+def decodeAccessToken(token: str) -> dict:
+    return jwt.decode(
+        token,
+        settings.jwt_secret_key,
+        algorithms=[settings.jwt_algorithm],
+        audience=settings.jwt_audience,
+        issuer=settings.jwt_issuer,
+    )
+
+
 def generateRefreshToken() -> str:
     return secrets.token_urlsafe(48)
 
@@ -54,6 +64,16 @@ def getRefreshCookieSettings() -> dict:
         "httponly": True,
         "secure": settings.refresh_cookie_secure,
         "samesite": settings.refresh_cookie_samesite,
-        "path": settings.refresh_cookie_path,
+        "path": None,
         "max_age": settings.refresh_absolute_days * 24 * 60 * 60,
+    }
+
+
+def getClearRefreshCookieSettings() -> dict:
+    return {
+        "key": settings.refresh_cookie_name,
+        "httponly": True,
+        "secure": settings.refresh_cookie_secure,
+        "samesite": settings.refresh_cookie_samesite,
+        "path": None,
     }

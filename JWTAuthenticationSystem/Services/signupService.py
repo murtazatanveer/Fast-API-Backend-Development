@@ -44,7 +44,6 @@ async def signup(payload: SignupRequest, request: Request) -> dict:
             db.add(refresh_token_row)
 
             await db.commit()
-            await db.refresh(user)
 
             return {
                 "user": user,

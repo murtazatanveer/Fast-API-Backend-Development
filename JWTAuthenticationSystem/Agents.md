@@ -95,7 +95,7 @@ Cookie set with: httpOnly; Secure; SameSite=Strict/Lax;
 Client stores access token in React Context (in-memory, never localStorage).
 
 2. Normal API calls (access token valid)
-   Client attaches Authorization: Bearer\_<access_token>.
+   Client attaches authToken: Bearer_<access_token>.
 
 Server verifies JWT signature, exp, aud, iss.
 
@@ -146,7 +146,7 @@ Otherwise → rotate token, slide 30 days forward, keep 90-day absolute, return 
 User is silently logged in.
 
 5. Logout
-   Client calls POST /auth/logout.
+   Client calls DELETE /auth/logout.
 
 Server deletes/revokes the refresh token row in DB.
 
@@ -155,6 +155,8 @@ Server clears the cookie.
 Client clears Context.
 
 (Client-only clearing is not sufficient — server revocation is required.)
+
+**HTTP methods:** `/auth/refresh` remains `POST` because it rotates state, while `/auth/logout` and `/auth/logout-other-devices` use `DELETE`.
 
 ## 6. Endpoint-by-Endpoint Development Approach
 
@@ -195,7 +197,7 @@ Whenever an endpoint's implementation or functionality changes, the correspondin
 
 **Description:**
 
-Registers a new user account. The server validates the submitted username, email, and password, hashes the password with bcrypt, creates the user, issues a 15-minute JWT access token in the JSON body, and issues an opaque refresh token inside an httpOnly cookie. The refresh token is stored hashed in the database with a 30-day sliding expiry, a fixed 90-day absolute expiry, a new `familyId`, and `revoked = false`.
+Registers a new user account. The server validates the submitted username, email, and password, hashes the password with bcrypt, creates the user, and issues an opaque refresh token inside an httpOnly cookie together with a short-lived JWT access token. The refresh token is stored hashed in the database with a 30-day sliding expiry, a fixed 90-day absolute expiry, a new `familyId`, and `revoked = false`. The API responds with a success message and the access token only.
 
 **Request body (JSON, camelCase):**
 
@@ -205,12 +207,9 @@ Registers a new user account. The server validates the submitted username, email
 
 **Success response (`201`):**
 
-- `success: true`, `message`, `displayUi`.
-- `data.user` — `id`, `username`, `email`, `isActive`, `createdAt`.
-- `data.accessToken` — JWT access token, 15-minute expiry.
-- `data.tokenType` — `bearer`.
-- `data.expiresIn` — access token lifetime in seconds.
-- `Set-Cookie` — `refresh_token`, `HttpOnly`, `Secure`, `SameSite`, `Path=/auth`, 90-day `Max-Age`.
+- `success: true`, `message` (`Account Created Successfully`), `displayUi`, `data.accessToken`.
+- No user data is included in the JSON body; the refresh token is never exposed in JSON.
+- `Set-Cookie` — `refresh_token`, `HttpOnly`, `Secure`, `SameSite`, 90-day `Max-Age`.
 
 **Execution flow:**
 
@@ -219,10 +218,9 @@ Registers a new user account. The server validates the submitted username, email
 3. The service opens an async database session and checks whether the email or username already exists.
 4. The password is hashed with bcrypt.
 5. A new user row is created with a UUIDv7 identifier.
-6. An access token is generated with `sub`, `jti`, `type`, `iat`, `exp`, `iss`, and `aud` claims.
-7. An opaque refresh token is generated; its SHA-256 hash is stored with `familyId`, `slidingExpiry = now + 30 days`, `absoluteExpiry = now + 90 days`, `revoked = false`, and client audit fields.
-8. The transaction is committed once; failures are rolled back.
-9. The controller returns the camelCase success payload, sets the refresh cookie, and returns the response.
+6. An opaque refresh token is generated; its SHA-256 hash is stored with `familyId`, `slidingExpiry = now + 30 days`, `absoluteExpiry = now + 90 days`, `revoked = false`, and client audit fields.
+7. The transaction is committed once; failures are rolled back.
+8. The controller returns the success message and access token, sets the refresh cookie, and returns the response.
 
 **Error cases:**
 
@@ -234,7 +232,7 @@ Registers a new user account. The server validates the submitted username, email
 
 **Description:**
 
-Authenticates an existing user with a username and password. The server looks up the user by username, verifies the submitted password against the stored bcrypt hash, issues a new 15-minute JWT access token in the JSON body, and issues a new opaque refresh token inside an httpOnly cookie. The refresh token is stored hashed in the database with a new `familyId`, a 30-day sliding expiry, a fixed 90-day absolute expiry, and `revoked = false`.
+Authenticates an existing user with a username and password. The server looks up the user by username, verifies the submitted password against the stored bcrypt hash, and issues a new opaque refresh token inside an httpOnly cookie together with a short-lived JWT access token. The refresh token is stored hashed in the database with a new `familyId`, a 30-day sliding expiry, a fixed 90-day absolute expiry, and `revoked = false`. The API responds with a success message and the access token only.
 
 **Request body (JSON, camelCase):**
 
@@ -243,27 +241,123 @@ Authenticates an existing user with a username and password. The server looks up
 
 **Success response (`200`):**
 
-- `success: true`, `message`, `displayUi`.
-- `data.user` — `id`, `username`, `email`, `isActive`, `createdAt`.
-- `data.accessToken` — JWT access token, 15-minute expiry.
-- `data.tokenType` — `bearer`.
-- `data.expiresIn` — access token lifetime in seconds.
-- `Set-Cookie` — `refresh_token`, `HttpOnly`, `Secure`, `SameSite`, `Path=/auth`, 90-day `Max-Age`.
+- `success: true`, `message` (`User Login Successfully`), `displayUi`, `data.accessToken`.
+- No user data is included in the JSON body; the refresh token is never exposed in JSON.
+- `Set-Cookie` — `refresh_token`, `HttpOnly`, `Secure`, `SameSite`, 90-day `Max-Age`.
 
 **Execution flow:**
 
 1. Request body is validated (username and password are required).
 2. The service opens an async database session and looks up the user by the trimmed username.
 3. The submitted password is verified against the stored bcrypt hash with a constant generic failure message.
-4. If the user is inactive, the request is rejected.
-5. An access token is generated with `sub`, `jti`, `type`, `iat`, `exp`, `iss`, and `aud` claims.
-6. A new opaque refresh token is generated; its SHA-256 hash is stored with a new `familyId`, `slidingExpiry = now + 30 days`, `absoluteExpiry = now + 90 days`, `revoked = false`, and client audit fields.
-7. The transaction is committed once; failures are rolled back.
-8. The controller returns the camelCase success payload, sets the refresh cookie, and returns the response.
+4. A new opaque refresh token is generated; its SHA-256 hash is stored with a new `familyId`, `slidingExpiry = now + 30 days`, `absoluteExpiry = now + 90 days`, `revoked = false`, and client audit fields.
+5. The transaction is committed once; failures are rolled back.
+6. The controller returns the success message and access token, sets the refresh cookie, and returns the response.
 
 **Error cases:**
 
 - `401` — invalid username or password.
-- `403` — account is inactive.
 - `422` — validation failure (missing username or password).
 - `500` — unexpected server or database failure.
+
+### Endpoint 3 — POST /auth/refresh
+
+**Description:**
+
+Rotates the refresh token using the opaque token supplied in the httpOnly cookie. The server hashes the presented token, looks it up in the database, and applies reuse and expiry checks in a strict order. A revoked token is treated as reuse (theft) regardless of its expiry and revokes the entire token family. If the sliding or absolute expiry is hit, every token in the family is deleted. A valid token is revoked and replaced with a new opaque token that keeps the same `familyId` and the same `absoluteExpiry`, while its `slidingExpiry` slides forward by 30 days. The API responds with a success message and a new access token, and sets the rotated refresh token in the cookie.
+
+**Request body:**
+
+- No request body. The refresh token is read from the `refresh_token` httpOnly cookie.
+
+**Success response (`200`):**
+
+- `success: true`, `message` (`Token Refreshed Successfully`), `displayUi`, `data.accessToken`.
+- The refresh token is never exposed in JSON.
+- `Set-Cookie` — rotated `refresh_token`, `HttpOnly`, `Secure`, `SameSite`, 90-day `Max-Age`.
+
+**Execution flow:**
+
+1. The refresh token is read from the `refresh_token` cookie; if it is missing or blank, the request fails.
+2. The presented token is hashed with SHA-256 and looked up by `tokenHash` using a row lock (`SELECT ... FOR UPDATE`) to serialize concurrent refreshes.
+3. If no row is found, the request fails.
+4. If the row is `revoked` (reuse detected), every non-revoked token in its `familyId` is revoked and the request fails. This check takes precedence over all expiry checks, so a revoked token that is also expired is still treated as reuse.
+5. If the row's `absoluteExpiry` is not after the current time (session older than 90 days), every token in its `familyId` is deleted and the request fails.
+6. If the row's `slidingExpiry` is not after the current time (inactive for more than 30 days), every token in its `familyId` is deleted and the request fails.
+7. Otherwise, the presented row is revoked and a new opaque refresh token is created with the same `familyId`, the same `absoluteExpiry`, `slidingExpiry = now + 30 days`, `revoked = false`, and the current request's client audit fields; the transaction is committed.
+8. A new access token is issued for the row's `userId`; the controller returns the success message and access token, sets the rotated refresh cookie, and returns the response.
+
+**Error cases:**
+
+- `401` — missing or unknown refresh token, reuse detected, sliding expiry exceeded, or absolute expiry exceeded; the message is always `Session expired. Please log in again.` and the refresh cookie is cleared.
+- `500` — unexpected server or database failure (the refresh cookie is left unchanged).
+
+### Endpoint 4 — DELETE /auth/logout
+
+**Description:**
+
+Ends the current refresh-token session. The endpoint is protected by a reusable JWT dependency that validates the access token supplied in the `authToken: Bearer_<accessToken>` header. It reads the opaque refresh token from the httpOnly cookie, hashes it, and looks it up in the database. If the token is found and belongs to the authenticated user, every token with the same `familyId` is deleted. Logout is idempotent: a missing, unknown, or already-deleted refresh token still succeeds, and the cookie is always cleared on success. The access token itself remains valid until its own expiry because access tokens are stateless.
+
+**Request:**
+
+- `authToken` header — `Bearer_<accessToken>` (required; validated by the shared JWT dependency).
+- `refresh_token` httpOnly cookie (optional for idempotency).
+- No request body.
+
+**Success response (`200`):**
+
+- `success: true`, `message` (`User Logged Out Successfully`), `displayUi`.
+- No `data` is returned and the refresh token is never exposed in JSON.
+- `Set-Cookie` — `refresh_token` cleared (empty value, `Max-Age=0`, `HttpOnly`, `Secure`, `SameSite`).
+
+**Execution flow:**
+
+1. The JWT dependency reads the required `authToken` header, requires the `Bearer_` prefix, strips it, and decodes the token, verifying its signature, `exp`, `aud`, and `iss`. It also requires `type = access` and a valid UUID `sub`; otherwise the request fails with `401` before the controller runs. A missing `authToken` header fails with `422`.
+2. The refresh token is read from the `refresh_token` cookie; if it is missing or blank, the request succeeds and the cookie is cleared.
+3. The presented token is hashed with SHA-256 and looked up by `tokenHash` using a row lock (`SELECT ... FOR UPDATE`) to serialize with concurrent refreshes.
+4. If no row is found, the request succeeds and the cookie is cleared.
+5. If the row's `userId` does not match the authenticated user, no tokens are deleted and the request still succeeds with the cookie cleared.
+6. Otherwise, every token with the row's `familyId` is deleted and the transaction is committed; other sessions/families remain active.
+7. The controller clears the refresh cookie and returns the success message.
+
+**Error cases:**
+
+- `422` — the `authToken` header is missing.
+- `401` — the `authToken` value has no `Bearer_` prefix, contains no token, or the token is malformed, expired, or otherwise invalid, or is not an access token; the message is `Unauthorized` and the refresh cookie is not cleared.
+- `500` — unexpected server or database failure (the refresh cookie is left unchanged).
+
+### Endpoint 5 — DELETE /auth/logout-other-devices
+
+**Description:**
+
+Ends every refresh-token session for the authenticated user except the current device. The endpoint is protected by the shared JWT dependency. It reads the authenticated user ID from the access token, reads the opaque refresh token from the httpOnly cookie, and uses its `familyId` to identify the current device. After confirming the refresh token belongs to the authenticated user, every token row for that user with a different `familyId` is deleted (including revoked history rows). The current device's family is left untouched, and the cookie is neither cleared nor rotated, so this device stays logged in. The success message reports how many other active devices were logged out.
+
+**Request:**
+
+- `authToken` header — `Bearer_<accessToken>` (required; validated by the shared JWT dependency).
+- `refresh_token` httpOnly cookie (required; identifies the current device's `familyId`).
+- No request body.
+
+**Success response (`200`):**
+
+- `success: true`, `displayUi`.
+- `message` — `No other devices to log out` when zero other active devices were deleted; `Logged out from 1 device` for one; `Logged out from N devices` otherwise.
+- No `data` is returned and the refresh token is never exposed in JSON.
+- No `Set-Cookie` is sent; the current cookie is left unchanged.
+
+**Execution flow:**
+
+1. The JWT dependency reads the required `authToken` header, requires the `Bearer_` prefix, strips it, and decodes the token, verifying its signature, `exp`, `aud`, and `iss`. It also requires `type = access` and a valid UUID `sub`; otherwise the request fails with `401` before the controller runs. A missing `authToken` header fails with `422`.
+2. The authenticated user ID is taken from the access token's `sub`.
+3. The refresh token is read from the `refresh_token` cookie; if it is missing or blank, the request fails with `401`.
+4. The presented token is hashed with SHA-256 and looked up by `tokenHash` using a row lock (`SELECT ... FOR UPDATE`) to find the current device's `familyId`. Revoked or expired current tokens are still accepted for identifying the device.
+5. If no row is found or its `userId` does not match the authenticated user, the request fails with `401`.
+6. The number of other active devices is counted as the distinct `familyId` values for the user, excluding the current family, that have at least one non-revoked row.
+7. Every row for the user whose `familyId` differs from the current family is deleted; the current family is untouched.
+8. The transaction is committed and the controller returns `200` with the count-based message; the refresh cookie is not modified.
+
+**Error cases:**
+
+- `422` — the `authToken` header is missing.
+- `401` — the `authToken` value has no `Bearer_` prefix, contains no token, or the token is malformed, expired, or otherwise invalid, or is not an access token; or the refresh cookie is missing, blank, unknown, or belongs to a different user. The message is `Unauthorized` and no cookie is cleared.
+- `500` — unexpected server or database failure (the refresh cookie is left unchanged).

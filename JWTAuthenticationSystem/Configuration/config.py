@@ -33,7 +33,6 @@ class Settings(BaseSettings):
     refresh_cookie_name: str = "refresh_token"
     refresh_cookie_secure: bool = True
     refresh_cookie_samesite: str = "lax"
-    refresh_cookie_path: str = "/auth"
 
     @property
     def database_url(self) -> URL:

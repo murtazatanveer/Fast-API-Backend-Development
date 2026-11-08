@@ -43,12 +43,6 @@ class RefreshToken(Base):
     revoked: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
-    revoked_at: Mapped[datetime | None] = mapped_column(
-        "revokedAt", DateTime(timezone=True), nullable=True
-    )
-    replaced_by_token_id: Mapped[UUID | None] = mapped_column(
-        "replacedByTokenId", PgUUID(as_uuid=True), nullable=True
-    )
     user_agent: Mapped[str | None] = mapped_column(
         "userAgent", String(255), nullable=True
     )

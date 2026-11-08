@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import Models  # noqa: F401
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from Configuration.supabaseClient import Base, closeDatabaseConnections, getDatabaseEngine
 from Routes.authRoutes import authRouter
@@ -35,6 +36,18 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(authRouter)
 
 
+@app.exception_handler(StarletteHTTPException)
+async def httpExceptionHandler(request: Request, exc: StarletteHTTPException):
+    response = errorResponse(
+        exc.status_code,
+        str(exc.detail),
+        displayUi=exc.status_code in (401, 403),
+    )
+    if exc.headers:
+        response.headers.update(exc.headers)
+    return response
+
+
 @app.exception_handler(RequestValidationError)
 async def validationExceptionHandler(request: Request, exc: RequestValidationError):
     errors = exc.errors()
@@ -43,7 +56,7 @@ async def validationExceptionHandler(request: Request, exc: RequestValidationErr
     message = first_error.get("msg", "Invalid request data")
     if location:
         message = f"{'.'.join(location)}: {message}"
-    return errorResponse(422, message, displayUi=True)
+    return errorResponse(422, message)
 
 
 @app.get("/")

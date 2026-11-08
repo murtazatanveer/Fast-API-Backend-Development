@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
@@ -30,20 +30,10 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(
         "passwordHash", String(255), nullable=False
     )
-    is_active: Mapped[bool] = mapped_column(
-        "isActive", Boolean, default=True, nullable=False
-    )
     created_at: Mapped[datetime] = mapped_column(
         "createdAt",
         DateTime(timezone=True),
         server_default=func.now(),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        "updatedAt",
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
         nullable=False,
     )
 

@@ -27,19 +27,11 @@ async def login(payload: LoginRequest, request: Request) -> dict:
                     display_ui=True,
                 )
 
-            if not user.is_active:
-                raise ServiceError(
-                    403,
-                    "Your account is inactive. Please contact support.",
-                    display_ui=True,
-                )
-
             access_token, expires_in = createAccessToken(user.id)
             refresh_token, refresh_token_row = buildRefreshTokenRow(user.id, request)
             db.add(refresh_token_row)
 
             await db.commit()
-            await db.refresh(user)
 
             return {
                 "user": user,
