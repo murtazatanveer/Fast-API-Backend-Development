@@ -7,7 +7,7 @@ def errorResponse(statusCode: int, message: str, displayUi:bool = False, **extra
     return JSONResponse(status_code=statusCode, content=content)
 
 
-def successResponse(statusCode: int, message: str,displayUi:bool=False, data: dict | None = None,
+def successResponse(statusCode: int, message: str,displayUi:bool=False, data: dict | list | None = None,
                     **extra) -> JSONResponse:
     content = {"success": True, "message": message,"displayUi":displayUi}
     if data is not None:

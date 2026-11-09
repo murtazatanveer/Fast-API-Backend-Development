@@ -17,3 +17,6 @@ uuid6
 passlib[bcrypt]
 bcrypt==4.0.1
 PyJWT
+
+# Resend Email Service
+resend

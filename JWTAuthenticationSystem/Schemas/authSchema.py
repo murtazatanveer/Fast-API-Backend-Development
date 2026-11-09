@@ -39,6 +39,11 @@ class LoginRequest(CamelModel):
     password: str = Field(min_length=1, max_length=72)
 
 
+class VerifyLoginRequest(CamelModel):
+    username: str = Field(min_length=1, max_length=50)
+    otp: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
 class AccessTokenPayload(CamelModel):
     user_id: UUID
     jti: str

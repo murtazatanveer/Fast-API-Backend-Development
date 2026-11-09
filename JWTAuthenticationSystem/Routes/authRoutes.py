@@ -6,21 +6,32 @@ from Controllers.authController import (
     logoutOtherDevicesController,
     refreshController,
     signupController,
+    verifyLoginController,
 )
 from Dependencies.authDependency import verifyAccessToken
-from Schemas.authSchema import AccessTokenPayload, LoginRequest, SignupRequest
+from Schemas.authSchema import (
+    AccessTokenPayload,
+    LoginRequest,
+    SignupRequest,
+    VerifyLoginRequest,
+)
 
 authRouter = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@authRouter.post("/signup", status_code=201)
-async def signupRoute(payload: SignupRequest, request: Request):
-    return await signupController(payload, request)
+@authRouter.post("/signup", status_code=200)
+async def signupRoute(payload: SignupRequest):
+    return await signupController(payload)
 
 
 @authRouter.post("/login", status_code=200)
-async def loginRoute(payload: LoginRequest, request: Request):
-    return await loginController(payload, request)
+async def loginRoute(payload: LoginRequest):
+    return await loginController(payload)
+
+
+@authRouter.post("/verify-login", status_code=200)
+async def verifyLoginRoute(payload: VerifyLoginRequest, request: Request):
+    return await verifyLoginController(payload, request)
 
 
 @authRouter.post("/refresh", status_code=200)

@@ -2,12 +2,18 @@ import logging
 
 from fastapi import Request
 
-from Schemas.authSchema import AccessTokenPayload, LoginRequest, SignupRequest
+from Schemas.authSchema import (
+    AccessTokenPayload,
+    LoginRequest,
+    SignupRequest,
+    VerifyLoginRequest,
+)
 from Services.loginService import login
 from Services.logoutOtherDevicesService import logoutOtherDevices
 from Services.logoutService import logout
 from Services.refreshService import refresh
 from Services.signupService import signup
+from Services.verifyLoginService import verifyLogin
 from Utils.errors import ServiceError
 from Utils.responceHelper import errorResponse, successResponse
 from Utils.security import getClearRefreshCookieSettings, getRefreshCookieSettings
@@ -29,32 +35,53 @@ def buildAuthResponse(status_code: int, message: str, result: dict):
     return response
 
 
-async def signupController(payload: SignupRequest, request: Request):
+async def signupController(payload: SignupRequest):
     try:
-        result = await signup(payload, request)
+        await signup(payload)
     except ServiceError as exc:
         return errorResponse(exc.status_code, exc.message, displayUi=exc.display_ui)
     except Exception:
         logger.exception("Signup failed")
         return errorResponse(
             500,
-            "Server Error. Please try again later",
+            "Server is not responding. Please try again later",
             displayUi=True,
         )
 
-    return buildAuthResponse(201, "Account Created Successfully", result)
+    return successResponse(200, "Account Created Successfully", displayUi=True)
 
 
-async def loginController(payload: LoginRequest, request: Request):
+async def loginController(payload: LoginRequest):
     try:
-        result = await login(payload, request)
+        result = await login(payload)
     except ServiceError as exc:
         return errorResponse(exc.status_code, exc.message, displayUi=exc.display_ui)
     except Exception:
         logger.exception("Login failed")
         return errorResponse(
             500,
-            "Server Error. Please try again later",
+            "Server is not responding. Please try again later",
+            displayUi=True,
+        )
+
+    return successResponse(
+        200,
+        "OTP Sent Successfully",
+        displayUi=True,
+        data={"email": result["email"]},
+    )
+
+
+async def verifyLoginController(payload: VerifyLoginRequest, request: Request):
+    try:
+        result = await verifyLogin(payload, request)
+    except ServiceError as exc:
+        return errorResponse(exc.status_code, exc.message, displayUi=exc.display_ui)
+    except Exception:
+        logger.exception("OTP verification failed")
+        return errorResponse(
+            500,
+            "Server is not responding. Please try again later",
             displayUi=True,
         )
 
@@ -72,14 +99,13 @@ async def refreshController(request: Request):
         logger.exception("Refresh failed")
         return errorResponse(
             500,
-            "Server Error. Please try again later",
+            "Server is not responding. Please try again later",
             displayUi=True,
         )
 
     response = successResponse(
         200,
         "Token Refreshed Successfully",
-        displayUi=True,
         data={"accessToken": result["access_token"]},
     )
     response.set_cookie(
@@ -96,7 +122,7 @@ async def logoutController(request: Request, current_user: AccessTokenPayload):
         logger.exception("Logout failed")
         return errorResponse(
             500,
-            "Server Error. Please try again later",
+            "Server is not responding. Please try again later",
             displayUi=True,
         )
 
@@ -120,7 +146,7 @@ async def logoutOtherDevicesController(
         logger.exception("Logout other devices failed")
         return errorResponse(
             500,
-            "An unexpected error occurred. Please try again.",
+            "Server is not responding. Please try again later",
             displayUi=True,
         )
 

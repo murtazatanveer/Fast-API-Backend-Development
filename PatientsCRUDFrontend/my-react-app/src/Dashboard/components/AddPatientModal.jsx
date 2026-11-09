@@ -37,7 +37,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
         weight: Number(formData.weight),
       };
 
-      const response = await fetchApi("/create-patient", {
+      const response = await fetchApi("/patients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

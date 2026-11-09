@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     refresh_cookie_secure: bool = True
     refresh_cookie_samesite: str = "lax"
 
+    resend_api_key: str
+    otp_from_email: str
+    otp_expire_minutes: int = 2
+    otp_max_attempts: int = 3
+
     @property
     def database_url(self) -> URL:
         return URL.create(

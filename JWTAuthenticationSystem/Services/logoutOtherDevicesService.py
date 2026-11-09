@@ -14,7 +14,7 @@ async def logoutOtherDevices(
 ) -> int:
     raw_refresh_token = request.cookies.get(settings.refresh_cookie_name)
     if not raw_refresh_token or not raw_refresh_token.strip():
-        raise ServiceError(401, "Unauthorized", display_ui=True)
+        raise ServiceError(401, "Unauthorized", display_ui=False)
 
     token_hash = hashRefreshToken(raw_refresh_token)
 
@@ -32,7 +32,7 @@ async def logoutOtherDevices(
                 refresh_token_row is None
                 or refresh_token_row.user_id != current_user.user_id
             ):
-                raise ServiceError(401, "Unauthorized", display_ui=True)
+                raise ServiceError(401, "Unauthorized", display_ui=False)
 
             other_devices = (
                 await db.execute(

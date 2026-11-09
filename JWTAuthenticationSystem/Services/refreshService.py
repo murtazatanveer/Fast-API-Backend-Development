@@ -16,10 +16,8 @@ SESSION_EXPIRED_MESSAGE = "Session expired. Please log in again."
 async def refresh(request: Request) -> dict:
     raw_refresh_token = request.cookies.get(settings.refresh_cookie_name)
     if not raw_refresh_token or not raw_refresh_token.strip():
-        raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=True)
-
+        raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=False)
     token_hash = hashRefreshToken(raw_refresh_token)
-
     session_factory = getSessionFactory()
     async with session_factory() as db:
         try:
@@ -29,10 +27,8 @@ async def refresh(request: Request) -> dict:
                 .with_for_update()
             )
             refresh_token_row = result.scalar_one_or_none()
-
             if refresh_token_row is None:
-                raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=True)
-
+                raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=False)
             now = datetime.now(timezone.utc)
 
             if refresh_token_row.revoked:
@@ -45,8 +41,7 @@ async def refresh(request: Request) -> dict:
                     .values(revoked=True)
                 )
                 await db.commit()
-                raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=True)
-
+                raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=False)
             if refresh_token_row.absolute_expiry <= now:
                 await db.execute(
                     delete(RefreshToken).where(
@@ -54,8 +49,7 @@ async def refresh(request: Request) -> dict:
                     )
                 )
                 await db.commit()
-                raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=True)
-
+                raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=False)
             if refresh_token_row.sliding_expiry <= now:
                 await db.execute(
                     delete(RefreshToken).where(
@@ -63,8 +57,7 @@ async def refresh(request: Request) -> dict:
                     )
                 )
                 await db.commit()
-                raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=True)
-
+                raise ServiceError(401, SESSION_EXPIRED_MESSAGE, display_ui=False)
             refresh_token_row.revoked = True
             new_refresh_token, new_refresh_token_row = buildRefreshTokenRow(
                 refresh_token_row.user_id,
@@ -74,16 +67,16 @@ async def refresh(request: Request) -> dict:
             )
             db.add(new_refresh_token_row)
             await db.commit()
-
             access_token, _ = createAccessToken(refresh_token_row.user_id)
-
             return {
                 "access_token": access_token,
                 "refresh_token": new_refresh_token,
             }
         except ServiceError:
+            print("Service Error")
             await db.rollback()
             raise
         except Exception:
+            print("Other Exception")
             await db.rollback()
             raise

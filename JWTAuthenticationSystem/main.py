@@ -3,10 +3,12 @@ from contextlib import asynccontextmanager
 import Models  # noqa: F401
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from Configuration.supabaseClient import Base, closeDatabaseConnections, getDatabaseEngine
 from Routes.authRoutes import authRouter
+from Routes.patientsRoutes import patientsRouter
 from Utils.responceHelper import errorResponse
 
 @asynccontextmanager
@@ -33,7 +35,15 @@ async def lifespan(app: FastAPI):
         print(f"❌ Error closing PostgreSQL: {e}")
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "authToken"],
+)
 app.include_router(authRouter)
+app.include_router(patientsRouter)
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -41,7 +51,6 @@ async def httpExceptionHandler(request: Request, exc: StarletteHTTPException):
     response = errorResponse(
         exc.status_code,
         str(exc.detail),
-        displayUi=exc.status_code in (401, 403),
     )
     if exc.headers:
         response.headers.update(exc.headers)

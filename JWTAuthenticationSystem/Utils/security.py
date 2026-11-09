@@ -20,6 +20,18 @@ def verifyPassword(password: str, password_hash: str) -> bool:
     return password_context.verify(password, password_hash)
 
 
+def generateOtp() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def hashOtp(otp: str) -> str:
+    return password_context.hash(otp)
+
+
+def verifyOtp(otp: str, otp_hash: str) -> bool:
+    return password_context.verify(otp, otp_hash)
+
+
 def createAccessToken(user_id: UUID) -> tuple[str, int]:
     now = datetime.now(timezone.utc)
     lifetime = timedelta(minutes=settings.access_token_expire_minutes)

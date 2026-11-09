@@ -1,4 +1,3 @@
-from fastapi import Request
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from uuid6 import uuid7
@@ -7,11 +6,10 @@ from Configuration.supabaseClient import getSessionFactory
 from Models.userModel import User
 from Schemas.authSchema import SignupRequest
 from Utils.errors import ServiceError
-from Utils.security import createAccessToken, hashPassword
-from Utils.tokenHelpers import buildRefreshTokenRow
+from Utils.security import hashPassword
 
 
-async def signup(payload: SignupRequest, request: Request) -> dict:
+async def signup(payload: SignupRequest) -> None:
     email = payload.email.strip().lower()
     username = payload.username.strip()
 
@@ -39,19 +37,7 @@ async def signup(payload: SignupRequest, request: Request) -> dict:
             )
             db.add(user)
 
-            access_token, expires_in = createAccessToken(user.id)
-            refresh_token, refresh_token_row = buildRefreshTokenRow(user.id, request)
-            db.add(refresh_token_row)
-
             await db.commit()
-
-            return {
-                "user": user,
-                "access_token": access_token,
-                "token_type": "bearer",
-                "expires_in": expires_in,
-                "refresh_token": refresh_token,
-            }
         except ServiceError:
             await db.rollback()
             raise

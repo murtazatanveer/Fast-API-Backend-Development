@@ -1,19 +1,46 @@
 import API_URL from "../Configuration/API_URL";
 
-const refreshAccessToken = async () => {
-  const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
-    method: "PUT",
-    credentials: "include",
-  });
+let refreshPromise = null;
+let sessionExpiryHandled = false;
 
-  if (!refreshResponse.ok) {
-    throw new Error("Refresh Failed");
+const handleSessionExpired = () => {
+  if (sessionExpiryHandled) return;
+
+  sessionExpiryHandled = true;
+  localStorage.removeItem("accessToken");
+
+  setTimeout(() => {
+    window.location.href = "/login";
+  }, 2000);
+};
+
+const refreshAccessToken = async () => {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then(async (refreshResponse) => {
+        if (!refreshResponse.ok) {
+          throw new Error("Refresh Failed");
+        }
+
+        const refreshData = await refreshResponse.json();
+        const newToken = refreshData?.data?.accessToken;
+
+        if (!newToken) {
+          throw new Error("Refresh Failed");
+        }
+
+        localStorage.setItem("accessToken", newToken);
+        return newToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
   }
 
-  const refreshData = await refreshResponse.json();
-  const newToken = refreshData.data.accessToken;
-  localStorage.setItem("accessToken", newToken);
-  return newToken;
+  return refreshPromise;
 };
 
 export const fetchApi = async (
@@ -36,7 +63,12 @@ export const fetchApi = async (
 
   if (response.status === 401) {
     try {
-      const newToken = await refreshAccessToken();
+      const latestToken = localStorage.getItem("accessToken");
+      const newToken =
+        latestToken && latestToken !== token
+          ? latestToken
+          : await refreshAccessToken();
+
       requestConfig.headers.authToken = `Bearer_${newToken}`;
 
       response = await fetch(`${API_URL}${endpoint}`, requestConfig);
@@ -44,16 +76,12 @@ export const fetchApi = async (
       if (response.status === 401) {
         throw new Error("Refresh Request Again Failed");
       }
-    } catch (error) {
-      localStorage.removeItem("accessToken");
+    } catch {
+      handleSessionExpired();
 
       const sessionError = new Error("Session expired. Please log in again.");
 
       sessionError.displayUi = true;
-
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
 
       throw sessionError;
     }
