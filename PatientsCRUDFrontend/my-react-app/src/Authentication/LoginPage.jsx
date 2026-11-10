@@ -1,14 +1,61 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
-import { AuthLayout } from "./components/AuthLayout";
-import { AuthHeader } from "./components/AuthHeader";
-import { AuthAlert } from "./components/AuthAlert";
-import { AuthInput } from "./components/AuthInput";
-import { AuthButton } from "./components/AuthButton";
+import { AuthLayout } from "../Components/AuthLayout";
+import { AuthHeader } from "../Components/AuthHeader";
+import { AuthAlert } from "../Components/AuthAlert";
+import { AuthInput } from "../Components/AuthInput";
+import { AuthButton } from "../Components/AuthButton";
+import OtpPage from "../Otp/OtpPage";
+import { useAuthContext } from "../Hooks/useAuthContext";
 
 const LoginPage = () => {
   const { formData, loading, error, success, handleChange, handleSubmit } =
     useAuth("login");
+  const { setAccessToken } = useAuthContext();
+
+  const [otpSession, setOtpSession] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const successMessage = success || location.state?.successMessage || "";
+
+  const handleLoginSubmit = async (event) => {
+    const credentials = {
+      username: formData.username.trim(),
+      password: formData.password,
+    };
+    const data = await handleSubmit(event);
+
+    if (!data) return;
+
+    setOtpSession({
+      ...credentials,
+      maskedEmail: data?.data?.email || "",
+    });
+  };
+
+  const handleVerified = (accessToken) => {
+    setAccessToken(accessToken);
+    navigate("/dashboard");
+  };
+
+  const handleReturnToLogin = () => {
+    setOtpSession(null);
+  };
+
+  if (otpSession) {
+    return (
+      <OtpPage
+        username={otpSession.username}
+        password={otpSession.password}
+        maskedEmail={otpSession.maskedEmail}
+        onVerified={handleVerified}
+        onAttemptsExhausted={handleReturnToLogin}
+        onBackToLogin={handleReturnToLogin}
+      />
+    );
+  }
 
   return (
     <AuthLayout>
@@ -33,9 +80,9 @@ const LoginPage = () => {
       />
 
       <AuthAlert type="error" message={error} />
-      <AuthAlert type="success" message={success} />
+      <AuthAlert type="success" message={successMessage} />
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleLoginSubmit} className="space-y-5">
         <AuthInput
           label="Username"
           name="username"

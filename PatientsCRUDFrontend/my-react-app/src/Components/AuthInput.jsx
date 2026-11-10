@@ -1,4 +1,3 @@
-// Authentication/components/AuthInput.jsx
 export const AuthInput = ({
   label,
   icon,
@@ -8,6 +7,11 @@ export const AuthInput = ({
   onChange,
   placeholder,
   minLength,
+  maxLength,
+  inputMode,
+  pattern,
+  autoComplete,
+  disabled,
 }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -24,9 +28,14 @@ export const AuthInput = ({
         name={name}
         required
         minLength={minLength}
+        maxLength={maxLength}
+        inputMode={inputMode}
+        pattern={pattern}
+        autoComplete={autoComplete}
+        disabled={disabled}
         value={value}
         onChange={onChange}
-        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white transition-all duration-200"
+        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
         placeholder={placeholder}
       />
     </div>

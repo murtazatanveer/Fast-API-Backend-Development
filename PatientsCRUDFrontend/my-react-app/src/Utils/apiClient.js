@@ -1,20 +1,32 @@
 import API_URL from "../Configuration/API_URL";
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+  subscribeToAccessToken,
+} from "./authTokenStore";
 
 let refreshPromise = null;
 let sessionExpiryHandled = false;
+
+subscribeToAccessToken(() => {
+  if (getAccessToken()) {
+    sessionExpiryHandled = false;
+  }
+});
 
 const handleSessionExpired = () => {
   if (sessionExpiryHandled) return;
 
   sessionExpiryHandled = true;
-  localStorage.removeItem("accessToken");
+  clearAccessToken();
 
   setTimeout(() => {
     window.location.href = "/login";
   }, 2000);
 };
 
-const refreshAccessToken = async () => {
+export const refreshAccessToken = async () => {
   if (!refreshPromise) {
     refreshPromise = fetch(`${API_URL}/auth/refresh`, {
       method: "POST",
@@ -32,7 +44,7 @@ const refreshAccessToken = async () => {
           throw new Error("Refresh Failed");
         }
 
-        localStorage.setItem("accessToken", newToken);
+        setAccessToken(newToken);
         return newToken;
       })
       .finally(() => {
@@ -48,7 +60,7 @@ export const fetchApi = async (
   options = {},
   withCredentials = false,
 ) => {
-  let token = localStorage.getItem("accessToken");
+  let token = getAccessToken();
 
   const requestConfig = {
     ...options,
@@ -63,7 +75,7 @@ export const fetchApi = async (
 
   if (response.status === 401) {
     try {
-      const latestToken = localStorage.getItem("accessToken");
+      const latestToken = getAccessToken();
       const newToken =
         latestToken && latestToken !== token
           ? latestToken

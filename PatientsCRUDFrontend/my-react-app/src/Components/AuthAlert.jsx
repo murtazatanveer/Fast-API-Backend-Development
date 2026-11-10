@@ -1,4 +1,3 @@
-// Authentication/components/AuthAlert.jsx
 export const AuthAlert = ({ type, message }) => {
   if (!message) return null;
   const isError = type === "error";

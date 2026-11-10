@@ -12,7 +12,7 @@ from Utils.errors import ServiceError
 from Utils.security import createAccessToken, verifyOtp
 from Utils.tokenHelpers import buildRefreshTokenRow
 
-INVALID_OTP_MESSAGE = "Invalid or expired OTP"
+INVALID_OTP_MESSAGE = "OTP not Valid"
 
 
 async def verifyLogin(payload: VerifyLoginRequest, request: Request) -> dict:

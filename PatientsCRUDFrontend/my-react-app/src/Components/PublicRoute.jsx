@@ -1,9 +1,15 @@
 import { Navigate, Outlet } from "react-router-dom";
+import AuthLoadingScreen from "./AuthLoadingScreen";
+import { useAuthContext } from "../Hooks/useAuthContext";
 
 const PublicRoute = () => {
-  const token = localStorage.getItem("accessToken");
+  const { accessToken, isInitializing } = useAuthContext();
 
-  if (token) {
+  if (isInitializing) {
+    return <AuthLoadingScreen />;
+  }
+
+  if (accessToken) {
     return <Navigate to="/dashboard" replace />;
   }
 

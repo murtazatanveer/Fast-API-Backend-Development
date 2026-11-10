@@ -1,4 +1,3 @@
-// Authentication/components/AuthButton.jsx
 export const AuthButton = ({ loading, text, loadingText }) => (
   <button
     type="submit"

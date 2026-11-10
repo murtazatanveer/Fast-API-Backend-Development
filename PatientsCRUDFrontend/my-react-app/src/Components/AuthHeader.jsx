@@ -1,4 +1,3 @@
-// Authentication/components/AuthHeader.jsx
 export const AuthHeader = ({ icon, title, subtitle }) => (
   <div className="text-center mb-8">
     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white shadow-lg shadow-blue-500/30 mb-4 transform transition-transform hover:scale-105">

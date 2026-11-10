@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchApi } from "../../Utils/apiClient";
 import Toast from "../../Components/Toast";
+import { useAuthContext } from "../../Hooks/useAuthContext";
 
 const LogoutMenu = ({ onLogoutSuccess }) => {
+  const { clearAccessToken } = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "" });
@@ -39,7 +41,7 @@ const LogoutMenu = ({ onLogoutSuccess }) => {
 
       if (endpoint === "/auth/logout") {
         // 1. LOGOUT FROM THIS DEVICE
-        localStorage.removeItem("accessToken");
+        clearAccessToken();
         if (onLogoutSuccess) onLogoutSuccess();
         window.location.href = "/login";
       } else {

@@ -1,4 +1,3 @@
-// Authentication/components/AuthLayout.jsx
 export const AuthLayout = ({ children }) => (
   <div className="min-h-screen bg-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
     <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>

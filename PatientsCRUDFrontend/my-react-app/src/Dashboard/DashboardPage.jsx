@@ -18,7 +18,7 @@ const DashboardPage = () => {
       } else {
         setPatients([]);
       }
-    } catch (err) {
+    } catch {
       setPatients([]);
     } finally {
       setLoading(false);
@@ -26,7 +26,11 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
-    fetchPatients();
+    const loadPatients = async () => {
+      await fetchPatients();
+    };
+
+    loadPatients();
   }, []);
 
   const handleEdit = (patient) => {

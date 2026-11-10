@@ -1,7 +1,6 @@
-// Authentication/hooks/useAuth.js
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authRequest } from "../utils/authApi";
+import { authRequest } from "../../Utils/authApi";
 
 export const useAuth = (type = "login") => {
   const [formData, setFormData] = useState(
@@ -27,26 +26,27 @@ export const useAuth = (type = "login") => {
     setSuccess("");
 
     try {
-      // 1. Call the API based on the page type
-      const data =
-        type === "login"
-          ? await authRequest("login", formData, "Login failed")
-          : await authRequest("signup", formData, "Signup failed");
+      if (type === "login") {
+        return await authRequest("login", formData, "Login failed");
+      }
 
-      // 3. Store the Access Token in LocalStorage
+      const data = await authRequest("signup", formData, "Signup failed");
 
-      localStorage.setItem("accessToken", data.data.accessToken);
+      navigate("/login", {
+        state: {
+          successMessage: data?.message || "Account Created Successfully",
+        },
+      });
 
-      // 4. Redirect to the protected page after a short delay
-
-      navigate("/dashboard");
+      return data;
     } catch (err) {
-      // 5. Handle the displayUi flag
       if (err?.displayUi === true) {
         setError(err.message);
       } else {
         setError("Network error or Server Error. Please try again.");
       }
+
+      return null;
     } finally {
       setLoading(false);
     }

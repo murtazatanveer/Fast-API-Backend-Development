@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
-import { AuthLayout } from "./components/AuthLayout";
-import { AuthHeader } from "./components/AuthHeader";
-import { AuthAlert } from "./components/AuthAlert";
-import { AuthInput } from "./components/AuthInput";
-import { AuthButton } from "./components/AuthButton";
+import { AuthLayout } from "../Components/AuthLayout";
+import { AuthHeader } from "../Components/AuthHeader";
+import { AuthAlert } from "../Components/AuthAlert";
+import { AuthInput } from "../Components/AuthInput";
+import { AuthButton } from "../Components/AuthButton";
 
 const SignupPage = () => {
   const { formData, loading, error, success, handleChange, handleSubmit } =
@@ -78,7 +78,7 @@ const SignupPage = () => {
           value={formData.password}
           onChange={handleChange}
           placeholder="••••••••"
-          minLength={6}
+          minLength={8}
           icon={
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

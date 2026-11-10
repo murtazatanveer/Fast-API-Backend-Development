@@ -1,5 +1,3 @@
-import React from "react";
-
 const PatientCard = ({ patient, onEdit, onDelete }) => {
   // Helper function to handle verdict colors safely
   const getVerdictStyle = (verdict) => {
